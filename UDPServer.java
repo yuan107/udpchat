@@ -12,11 +12,15 @@ import java.io.*;
 import java.net.*;
 
 class UDPServer {
+	public static DatagramSocket serverSocket = null;
+	public static int port = 0;
+	public static InetAddress RedIP = null;
+	public static InetAddress BlueIP = null;
 	
   public static void main(String args[]) throws Exception
     {
-    DatagramSocket serverSocket = null;
-	int port = 0;
+    //DatagramSocket serverSocket = null;
+	//int port = 0;
 	  
 	try
 		{
@@ -29,11 +33,10 @@ class UDPServer {
 			System.exit(0);
 		}
 
-      byte[] receiveData = new byte[1024];
-      byte[] sendData  = new byte[1024];
-
       while(true)
         {
+      byte[] receiveData = new byte[1024];
+      byte[] sendData  = new byte[1024];
           DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 		  
           serverSocket.receive(receivePacket);
@@ -44,11 +47,39 @@ class UDPServer {
 
           port = receivePacket.getPort();
 
-          String capitalizedSentence = sentence.toUpperCase()  + " this is from the server";
-
-          sendData = capitalizedSentence.getBytes();
-
-          DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
+          sendData = sentence.getBytes();
+		  
+		  System.out.println("MSG RECIEVED: " + sentence);
+		  
+		  InetAddress sendAddress = null;
+		  if(IPAddress.equals(RedIP) && BlueIP != null){
+			  sendAddress = BlueIP;
+			  System.out.println("Sending to Blue");
+		  } else if(IPAddress.equals(BlueIP) && RedIP != null) {
+			  sendAddress = RedIP;
+			  System.out.println("Sending to Red");
+		  } else if(RedIP == null){
+			  RedIP = IPAddress;
+			  sendAddress = RedIP;
+			  sendData = new String("100: You are Red").getBytes();
+		  } else if(BlueIP == null){
+			  BlueIP = IPAddress;
+			  sendAddress = BlueIP;
+			  sendData = new String("200: You are Blue").getBytes();
+			 
+			//send to both IP's
+			DatagramPacket sendPacket2 = new DatagramPacket(sendData, sendData.length, RedIP, port);
+			serverSocket.send(sendPacket2);
+		  } else{
+			  BlueIP = IPAddress;
+			  sendAddress = BlueIP;
+			  sendData = new String("404: Something screwed up").getBytes();
+			 
+			//send to both IP's
+			DatagramPacket sendPacket2 = new DatagramPacket(sendData, sendData.length, RedIP, port);
+			serverSocket.send(sendPacket2);
+		   }
+          DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, sendAddress, port);
 
           serverSocket.send(sendPacket);
         }
